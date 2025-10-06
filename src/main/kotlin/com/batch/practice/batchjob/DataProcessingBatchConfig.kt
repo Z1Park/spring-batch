@@ -1,5 +1,7 @@
 package com.batch.practice.batchjob
 
+import com.batch.practice.batchlistener.MyJobExecutionListener
+import com.batch.practice.batchlistener.MyStepExecutionListener
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
@@ -27,13 +29,14 @@ class DataProcessingBatchConfig(
 	private val log = LoggerFactory.getLogger(this::class.java)
 
 	@Bean
-	fun dataProcessingJob(dataProcessingStep: Step): Job {
+	fun dataProcessingJob(dataProcessingStep: Step, myJobExecutionListener: MyJobExecutionListener): Job {
 		return JobBuilder("dataProcessingJob", jobRepository)
 //			.validator(dataProcessingBatchJobParametersValidator)
-			.validator(DefaultJobParametersValidator(
-				arrayOf("stringParam"),	// 필수 파라미터
-				arrayOf("intParam"),		// 선택 파라미터
-			))
+//			.validator(DefaultJobParametersValidator(
+//				arrayOf("stringParam"),	// 필수 파라미터
+//				arrayOf("intParam"),		// 선택 파라미터
+//			))
+			.listener(myJobExecutionListener)
 			.start(dataProcessingStep)
 			.build()
 	}
@@ -45,12 +48,14 @@ class DataProcessingBatchConfig(
 //		enumProcessingTasklet: Tasklet,
 //		pojoProcessingTasklet: Tasklet,
 		jobExecutionParameterTasklet: Tasklet,
+		myStepExecutionListener: MyStepExecutionListener,
 	): Step {
 		return StepBuilder("dataProcessingStep", jobRepository)
 //			.tasklet(dataProcessingTasklet, transactionManager)
 //			.tasklet(timeProcessingTasklet, transactionManager)
 //			.tasklet(enumProcessingTasklet, transactionManager)
 //			.tasklet(pojoProcessingTasklet, transactionManager)
+			.listener(myStepExecutionListener)
 			.tasklet(jobExecutionParameterTasklet, transactionManager)
 			.build()
 	}
