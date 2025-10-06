@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.annotation.StepScope
+import org.springframework.batch.core.job.DefaultJobParametersValidator
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
@@ -21,12 +22,18 @@ import java.time.LocalDateTime
 class DataProcessingBatchConfig(
 	private val jobRepository: JobRepository,
 	private val transactionManager: PlatformTransactionManager,
+	private val dataProcessingBatchJobParametersValidator: DataProcessingBatchJobParametersValidator,
 ) {
 	private val log = LoggerFactory.getLogger(this::class.java)
 
 	@Bean
 	fun dataProcessingJob(dataProcessingStep: Step): Job {
 		return JobBuilder("dataProcessingJob", jobRepository)
+//			.validator(dataProcessingBatchJobParametersValidator)
+			.validator(DefaultJobParametersValidator(
+				arrayOf("stringParam"),	// 필수 파라미터
+				arrayOf("intParam"),		// 선택 파라미터
+			))
 			.start(dataProcessingStep)
 			.build()
 	}
@@ -36,13 +43,15 @@ class DataProcessingBatchConfig(
 //		dataProcessingTasklet: Tasklet,
 //		timeProcessingTasklet: Tasklet,
 //		enumProcessingTasklet: Tasklet,
-		pojoProcessingTasklet: Tasklet,
+//		pojoProcessingTasklet: Tasklet,
+		jobExecutionParameterTasklet: Tasklet,
 	): Step {
 		return StepBuilder("dataProcessingStep", jobRepository)
 //			.tasklet(dataProcessingTasklet, transactionManager)
 //			.tasklet(timeProcessingTasklet, transactionManager)
 //			.tasklet(enumProcessingTasklet, transactionManager)
-			.tasklet(pojoProcessingTasklet, transactionManager)
+//			.tasklet(pojoProcessingTasklet, transactionManager)
+			.tasklet(jobExecutionParameterTasklet, transactionManager)
 			.build()
 	}
 
@@ -101,6 +110,19 @@ class DataProcessingBatchConfig(
 			split.forEach {  log.info(" - stringItem: $it") }
 			// pojo processing logic here
 
+			RepeatStatus.FINISHED
+		}
+	}
+
+	@Bean
+	fun jobExecutionParameterTasklet(): Tasklet {
+		return Tasklet { contribution, chunkContext ->
+			val jobParameters = chunkContext.stepContext.jobParameters
+			log.info("Job Parameters:")
+			(jobParameters["stringParam"] as String?)
+				?.split(",")
+				?.forEach { log.info(" - stringParam item: $it") }
+			(jobParameters["intParam"] as Int?)?.let { log.info(" - intParam: $it") }
 			RepeatStatus.FINISHED
 		}
 	}
