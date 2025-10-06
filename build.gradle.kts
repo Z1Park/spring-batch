@@ -22,6 +22,8 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-batch")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.springframework.boot:spring-boot-starter-json")
+
 	implementation("ch.qos.logback:logback-core")
 	implementation("org.slf4j:slf4j-api")
 
