@@ -2,6 +2,8 @@ package com.batch.practice.batchjob
 
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
+import org.springframework.batch.core.JobExecution
+import org.springframework.batch.core.JobExecutionListener
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.annotation.JobScope
 import org.springframework.batch.core.configuration.annotation.StepScope
@@ -51,5 +53,21 @@ class ScopeBatchConfig(
 	) = Tasklet { contribution, chunkContext ->
 		log.info("This is scope tasklet. taskletParam = {}", taskletParam)
 		RepeatStatus.FINISHED
+	}
+
+	@Bean
+	@JobScope
+	fun scopeIntegrationListener(
+		@Value("#{jobParameters['listenerParam']}") listenerParam: String,
+	): JobExecutionListener {
+		return object: JobExecutionListener {
+			override fun beforeJob(jobExecution: JobExecution) {
+				log.info("This is scope listener. listenerParam = {}", listenerParam)
+			}
+
+			override fun afterJob(jobExecution: JobExecution) {
+				log.info("This is scope listener after job.")
+			}
+		}
 	}
 }
