@@ -6,3 +6,16 @@ spring:
 #  batch:
 #    job:
 #      enabled: false
+
+  sql:
+   init:
+     mode: always
+     schema-locations: classpath:org/springframework/batch/core/schema-drop-h2.sql
+  batch:
+    jdbc:
+      initialize-schema: always
+  datasource:
+    url: jdbc:postgresql://localhost:5432/practice
+    driver-class-name: org.postgresql.Driver
+    username: root
+    password: 1234
