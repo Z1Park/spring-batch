@@ -22,6 +22,9 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-batch")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.springframework.boot:spring-boot-starter-json")
+//	implementation("org.springframework.boot:spring-boot-starter-web")  // 웹 API를 통한 배치 트리거 테스트 시 필요
+
 	implementation("ch.qos.logback:logback-core")
 	implementation("org.slf4j:slf4j-api")
 

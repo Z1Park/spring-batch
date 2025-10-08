@@ -1,0 +1,8 @@
+spring:
+  application:
+    name:
+      practice
+
+#  batch:
+#    job:
+#      enabled: false
