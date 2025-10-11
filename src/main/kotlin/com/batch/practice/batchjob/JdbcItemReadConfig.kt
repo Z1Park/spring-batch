@@ -9,7 +9,9 @@ import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.database.JdbcCursorItemReader
+import org.springframework.batch.item.database.JdbcPagingItemReader
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
@@ -33,19 +35,21 @@ class JdbcItemReadConfig(
 
 	@Bean
 	fun jdbcItemReadStep(
-		jdbcItemReader1: JdbcCursorItemReader<MutableItem>,
-		jdbcItemWriter1: ItemWriter<MutableItem>
+		jdbcCursorItemReader: JdbcCursorItemReader<MutableItem>,
+		jdbcPagingItemReader: JdbcPagingItemReader<MutableItem>,
+		jdbcItemWriter1: ItemWriter<MutableItem>,
 	): Step {
 		return StepBuilder("jdbcItemReadStep", jobRepository)
-			.chunk<MutableItem, MutableItem>(5, transactionManager)
-			.reader(jdbcItemReader1)
 			.writer(jdbcItemWriter1)
+			.chunk<MutableItem, MutableItem>(3, transactionManager)
+//			.reader(jdbcCursorItemReader)
+			.reader(jdbcPagingItemReader)
 			.allowStartIfComplete(true)
 			.build()
 	}
 
 	@Bean
-	fun jdbcItemReader1(): JdbcCursorItemReader<MutableItem> {
+	fun jdbcCursorItemReader(): JdbcCursorItemReader<MutableItem> {
 		log.info(">> jdbcItemReader1")
 		return JdbcCursorItemReaderBuilder<MutableItem>()
 			.name("jdbcItemReader")
@@ -66,9 +70,26 @@ class JdbcItemReadConfig(
 	}
 
 	@Bean
+	fun jdbcPagingItemReader(): JdbcPagingItemReader<MutableItem> {
+		log.info(">> jdbcPagingItemReader")
+		return JdbcPagingItemReaderBuilder<MutableItem>()
+			.name("jdbcPagingItemReader")
+			.dataSource(dataSource)
+			.pageSize(3)
+			.selectClause("SELECT id, name, status")
+			.fromClause("FROM items")
+			.whereClause("WHERE status = :status")
+			.sortKeys(mapOf("id" to Order.ASCENDING))
+			.parameterValues(mapOf("status" to "READY"))
+			.beanRowMapper(MutableItem::class.java)
+			.build()
+	}
+
+	@Bean
 	fun jdbcItemWriter1(): ItemWriter<MutableItem> {
 		log.info(">> jdbcItemWriter1")
 		return ItemWriter { items ->
+			log.info("items size = {}", items.size())
 			items.forEach { item ->
 				log.info("item = {}", item)
 			}
