@@ -7,9 +7,12 @@ import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.launch.support.RunIdIncrementer
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
+import org.springframework.batch.item.ItemProcessor
 import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.database.JdbcCursorItemReader
 import org.springframework.batch.item.database.JdbcPagingItemReader
+import org.springframework.batch.item.database.Order
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder
 import org.springframework.context.annotation.Bean
@@ -37,13 +40,17 @@ class JdbcItemReadConfig(
 	fun jdbcItemReadStep(
 		jdbcCursorItemReader: JdbcCursorItemReader<MutableItem>,
 		jdbcPagingItemReader: JdbcPagingItemReader<MutableItem>,
+		itemStatusProcessor: ItemProcessor<MutableItem, MutableItem>,
 		jdbcItemWriter1: ItemWriter<MutableItem>,
+		jdbcBatchItemWriter: ItemWriter<MutableItem>,
 	): Step {
 		return StepBuilder("jdbcItemReadStep", jobRepository)
-			.writer(jdbcItemWriter1)
 			.chunk<MutableItem, MutableItem>(3, transactionManager)
 //			.reader(jdbcCursorItemReader)
 			.reader(jdbcPagingItemReader)
+			.processor(itemStatusProcessor)
+//			.writer(jdbcItemWriter1)
+			.writer(jdbcBatchItemWriter)
 			.allowStartIfComplete(true)
 			.build()
 	}
@@ -86,6 +93,16 @@ class JdbcItemReadConfig(
 	}
 
 	@Bean
+	fun itemStatusProcessor(): ItemProcessor<MutableItem, MutableItem> {
+		log.info(">> itemStatusProcessor")
+		return ItemProcessor { item ->
+			log.info("process item = {}", item)
+			item.status = "PROCESSED"
+			item
+	}
+}
+
+	@Bean
 	fun jdbcItemWriter1(): ItemWriter<MutableItem> {
 		log.info(">> jdbcItemWriter1")
 		return ItemWriter { items ->
@@ -94,6 +111,17 @@ class JdbcItemReadConfig(
 				log.info("item = {}", item)
 			}
 		}
+	}
+
+	@Bean
+	fun jdbcBatchItemWriter(): ItemWriter<MutableItem> {
+		log.info(">> jdbcBatchItemWriter")
+		return JdbcBatchItemWriterBuilder<MutableItem>()
+			.dataSource(dataSource)
+			.sql("UPDATE items SET status = :status WHERE id = :id")
+			.beanMapped()
+			.assertUpdates(true)
+			.build()
 	}
 }
 
