@@ -2,11 +2,13 @@ package com.batch.practice.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
 import java.time.LocalDateTime
 
 @Entity
@@ -24,7 +26,8 @@ class Item(
 	private val id: Long = 0L,
 
 	// 도메인이 맞지도 않고 양방향 매핑도 하지 않지만, 배치 연습을 위해 JPA 방식으로 조회
-	@OneToMany(mappedBy = "item")
+	@OneToMany(mappedBy = "item", fetch = FetchType.EAGER)
+	@BatchSize(size = 100)
 	private val orders: MutableList<Order> = mutableListOf()
 ) {
 

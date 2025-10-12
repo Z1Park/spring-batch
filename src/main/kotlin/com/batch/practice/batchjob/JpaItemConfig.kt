@@ -11,7 +11,9 @@ import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.item.ItemProcessor
 import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.database.JpaCursorItemReader
+import org.springframework.batch.item.database.JpaPagingItemReader
 import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.orm.jpa.JpaTransactionManager
@@ -35,13 +37,15 @@ class JpaItemConfig(
 
 	@Bean
 	fun jpaItemStep(
-		jpaCursorItemReader: JpaCursorItemReader<Item>,
+//		jpaCursorItemReader: JpaCursorItemReader<Item>,
+		jpaPagingItemReader: JpaPagingItemReader<Item>,
 		jpaItemProcessor: ItemProcessor<Item, Item>,
 		jpaItemWriter: ItemWriter<Item>,
 	): Step {
 		return StepBuilder("jpaItemStep", jobRepository)
 			.chunk<Item, Item>(3, transactionManager)
-			.reader(jpaCursorItemReader)
+//			.reader(jpaCursorItemReader)
+			.reader(jpaPagingItemReader)
 			.processor(jpaItemProcessor)
 			.writer(jpaItemWriter)
 			.allowStartIfComplete(true)
@@ -59,6 +63,22 @@ class JpaItemConfig(
 				WHERE i.status = :status
 			""".trimIndent())
 			.parameterValues(mapOf("status" to "READY"))
+			.build()
+	}
+
+	@Bean
+	fun jpaPagingItemReader(): JpaPagingItemReader<Item> {
+		return JpaPagingItemReaderBuilder<Item>()
+			.name("jpaPagingItemReader")
+			.entityManagerFactory(entityManagerFactory)
+			.queryString("""
+				SELECT i FROM Item i
+				WHERE i.status = :status
+				ORDER BY i.id ASC
+			""".trimIndent())
+			.parameterValues(mapOf("status" to "READY"))
+			.pageSize(3)
+			.transacted(false)
 			.build()
 	}
 
