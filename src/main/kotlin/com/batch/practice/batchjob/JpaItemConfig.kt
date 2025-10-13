@@ -13,6 +13,7 @@ import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.database.JpaCursorItemReader
 import org.springframework.batch.item.database.JpaPagingItemReader
 import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder
+import org.springframework.batch.item.database.builder.JpaItemWriterBuilder
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -37,15 +38,15 @@ class JpaItemConfig(
 
 	@Bean
 	fun jpaItemStep(
-//		jpaCursorItemReader: JpaCursorItemReader<Item>,
-		jpaPagingItemReader: JpaPagingItemReader<Item>,
+		jpaCursorItemReader: JpaCursorItemReader<Item>,
+//		jpaPagingItemReader: JpaPagingItemReader<Item>,
 		jpaItemProcessor: ItemProcessor<Item, Item>,
 		jpaItemWriter: ItemWriter<Item>,
 	): Step {
 		return StepBuilder("jpaItemStep", jobRepository)
 			.chunk<Item, Item>(3, transactionManager)
-//			.reader(jpaCursorItemReader)
-			.reader(jpaPagingItemReader)
+			.reader(jpaCursorItemReader)
+//			.reader(jpaPagingItemReader)
 			.processor(jpaItemProcessor)
 			.writer(jpaItemWriter)
 			.allowStartIfComplete(true)
@@ -95,15 +96,24 @@ class JpaItemConfig(
 		}
 	}
 
+//	@Bean
+//	fun jpaItemWriter(): ItemWriter<Item> {
+//		return ItemWriter { items ->
+//			items.forEach { item ->
+//				log.info("after process >> item = $item")
+//				item.getOrders().forEachIndexed { index, order ->
+//					log.info("   >> order[$index] = $order")
+//				}
+//			}
+//		}
+//	}
+
 	@Bean
 	fun jpaItemWriter(): ItemWriter<Item> {
-		return ItemWriter { items ->
-			items.forEach { item ->
-				log.info("after process >> item = $item")
-				item.getOrders().forEachIndexed { index, order ->
-					log.info("   >> order[$index] = $order")
-				}
-			}
-		}
+		log.info(">> jpaItemWriter")
+		return JpaItemWriterBuilder<Item>()
+			.entityManagerFactory(entityManagerFactory)
+			.usePersist(false) // merge 사용
+			.build()
 	}
 }
